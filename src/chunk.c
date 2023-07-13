@@ -8,6 +8,7 @@ void initChunk(Chunk *chunk)
     chunk->count = 0;
     chunk->capacity = 0;
     chunk->code = NULL;
+    initValueArray(&chunk->constants);
 }
 
 // Appends a byte to the end of a chunk
@@ -28,5 +29,14 @@ void writeChunk(Chunk *chunk, uint8_t byte)
 void freeChunk(Chunk *chunk)
 {
     FREE_ARRAY(uint8_t, chunk->code, chunk->capacity);
+    freeValueArray(&chunk->constants);
     initChunk(chunk); // Leaves chunk in a well-defined, empty state
+}
+
+// Appends a constant to a chunk's constants dynamic array
+// Returns index of appended constant.
+int addConstant(Chunk *chunk, Value value)
+{
+    writeValueArray(&chunk->constants, value);
+    return chunk->constants.count - 1;
 }
