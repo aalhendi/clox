@@ -36,6 +36,18 @@ int disassembleInstruction(Chunk *chunk, int offset)
     // Prints byte offset of given instruction
     printf("%04d ", offset);
 
+    // Prints line number
+    if (offset > 0 && chunk->lines[offset] == chunk->lines[offset - 1])
+    {
+        // If instruction has same line number as previous, print `|`
+        printf("   | ");
+    }
+    else
+    {
+        // Print the line number
+        printf("%4d ", chunk->lines[offset]);
+    }
+
     // Read single byte from bytecode array at given offset
     uint8_t instruction = chunk->code[offset];
 
