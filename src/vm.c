@@ -1,4 +1,5 @@
 #include "vm.h"
+#include "chunk.h"
 #include "common.h"
 #include "debug.h"
 #include "value.h"
@@ -48,6 +49,16 @@ static InterpretResult run() {
 #define READ_BYTE() (*vm.ip++)
 // Reads next byte from bytecode using it as index into chunk constants
 #define READ_CONSTANT() (vm.chunk->constants.values[READ_BYTE()])
+// Only difference in binary ops is the actual operator they use
+// This abstracts the boilerplate of popping the 2 operands
+// and pushing the result
+// do-while used to expand multi-statement macro with semicolon at the end.
+#define BINARY_OP(op)                                                          \
+  do {                                                                         \
+    double b = pop();                                                          \
+    double a = pop();                                                          \
+    push(a op b);                                                              \
+  } while (false)
 
   while (true) {
 #ifdef DEBUG_TRACE_EXECUTION
@@ -75,6 +86,29 @@ static InterpretResult run() {
       push(constant);
       break;
     }
+    case OP_ADD: {
+      BINARY_OP(+);
+      break;
+    }
+    case OP_SUBTRACT: {
+      BINARY_OP(-);
+      break;
+    }
+    case OP_MULTIPLY: {
+      BINARY_OP(*);
+      break;
+    }
+    case OP_DIVIDE: {
+      BINARY_OP(/);
+      break;
+    }
+    case OP_NEGATE: {
+      // Pops the top value in the stack, negates it and replaces it back
+      // TODO: might be faster to simply negate the value in place without
+      // messing with stackTop
+      push(-pop());
+      break;
+    }
     case OP_RETURN: {
       printValue(pop());
       printf("\n");
@@ -85,4 +119,5 @@ static InterpretResult run() {
 
 #undef READ_BYTE
 #undef READ_CONSTANT
+#undef BINARY_OP
 }
