@@ -56,3 +56,6 @@ dkms.conf
 .vscode/
 build/
 bin/
+
+# Clangd
+.cache/clangd/*
