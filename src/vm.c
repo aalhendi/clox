@@ -1,6 +1,7 @@
 #include "vm.h"
 #include "chunk.h"
 #include "common.h"
+#include "compiler.h"
 #include "debug.h"
 #include "value.h"
 #include <stdio.h>
@@ -37,10 +38,11 @@ Value pop() {
   return *vm.stackTop;
 }
 
-InterpretResult interpret(Chunk *chunk) {
-  vm.chunk = chunk;
-  vm.ip = vm.chunk->code;
-  return run();
+// Compilers the input source string into bytecode.
+// Returns an InterpretResult
+InterpretResult interpret(const char* source) {
+  compile(source);
+  return INTERPRET_OK;
 }
 
 // Handles decoding or dispatching the instruction.
