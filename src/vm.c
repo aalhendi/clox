@@ -8,43 +8,6 @@
 
 VM vm;
 
-static void resetStack() {
-  // Since stack won't be used till values are stored inside
-  // there is no need to allocate it or clear it
-  // Set stackTop ptr to point to beginning of stack to indicate its empty
-  vm.stackTop = vm.stack;
-}
-
-// Initializes the VM
-void initVM() { resetStack(); }
-
-void freeVM() {}
-
-// Appends a value to the end of the stack and increments the stackTop pointer
-void push(Value value) {
-  // Stores value in the address pointed to by the stackTop pointer
-  *vm.stackTop = value;
-  // Increment the pointer
-  vm.stackTop++;
-}
-
-// "Removes" the last value from the stack
-// returning it and decrementing the stack pointer
-Value pop() {
-  // Decrement the pointer.
-  vm.stackTop--;
-  // stackTop now points to last value in stack, return it
-  // no need to explicitly remove, it will be overwritten
-  return *vm.stackTop;
-}
-
-// Compilers the input source string into bytecode.
-// Returns an InterpretResult
-InterpretResult interpret(const char* source) {
-  compile(source);
-  return INTERPRET_OK;
-}
-
 // Handles decoding or dispatching the instruction.
 static InterpretResult run() {
 // Reads byte currently pointed at by IP then advances IP
@@ -123,3 +86,56 @@ static InterpretResult run() {
 #undef READ_CONSTANT
 #undef BINARY_OP
 }
+
+static void resetStack() {
+  // Since stack won't be used till values are stored inside
+  // there is no need to allocate it or clear it
+  // Set stackTop ptr to point to beginning of stack to indicate its empty
+  vm.stackTop = vm.stack;
+}
+
+// Initializes the VM
+void initVM() { resetStack(); }
+
+void freeVM() {}
+
+// Appends a value to the end of the stack and increments the stackTop pointer
+void push(Value value) {
+  // Stores value in the address pointed to by the stackTop pointer
+  *vm.stackTop = value;
+  // Increment the pointer
+  vm.stackTop++;
+}
+
+// "Removes" the last value from the stack
+// returning it and decrementing the stack pointer
+Value pop() {
+  // Decrement the pointer.
+  vm.stackTop--;
+  // stackTop now points to last value in stack, return it
+  // no need to explicitly remove, it will be overwritten
+  return *vm.stackTop;
+}
+
+// Compiler the input source string into bytecode.
+// Creates an empty chunk and passes it to the compiler.
+// If compile success, sets vm bytecode chunk to compile result.
+// Returns an InterpretResult
+InterpretResult interpret(const char* source) {
+  Chunk chunk;
+  initChunk(&chunk);
+
+  if (!compile(source, &chunk)) {
+    freeChunk(&chunk);
+    return INTERPRET_COMPILE_ERROR;
+  }
+
+  vm.chunk = &chunk;
+  vm.ip = vm.chunk->code;
+
+  InterpretResult result = run();
+
+  freeChunk(&chunk);
+  return result;
+}
+

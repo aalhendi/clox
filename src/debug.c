@@ -28,6 +28,15 @@ static int constantInstruction(const char *name, Chunk *chunk, int offset) {
   return offset + 2;
 }
 
+
+// Prints the name of the instruction
+// Returns offset+1
+static int simpleInstruction(const char *name, int offset) {
+  // Prints name of the instruction
+  printf("%s\n", name);
+  return offset + 1;
+}
+
 // Prints offset of instruction and its name
 // Returns new offset
 int disassembleInstruction(Chunk *chunk, int offset) {
@@ -65,12 +74,4 @@ int disassembleInstruction(Chunk *chunk, int offset) {
     printf("Unknown opcode %d\n", instruction);
     return offset + 1;
   }
-}
-
-// Prints the name of the instruction
-// Returns offset+1
-static int simpleInstruction(const char *name, int offset) {
-  // Prints name of the instruction
-  printf("%s\n", name);
-  return offset + 1;
 }
