@@ -24,7 +24,7 @@ typedef struct Chunk {
   // A dynamic value array to store chunk's constants
   ValueArray constants;
   // Another array to keep track of line numbers
-  // TODO: Impl a more efficient way of tracking lines.
+  // BONUS: Impl a more efficient way of tracking lines.
   int *lines;
 } Chunk;
 

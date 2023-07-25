@@ -69,7 +69,7 @@ static InterpretResult run() {
     }
     case OP_NEGATE: {
       // Pops the top value in the stack, negates it and replaces it back
-      // TODO: might be faster to simply negate the value in place without
+      // BONUS: might be faster to simply negate the value in place without
       // messing with stackTop
       push(-pop());
       break;

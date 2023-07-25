@@ -104,7 +104,7 @@ static void skipWhitespace() {
       break;
     }
     case '/': {
-      // TODO: Support multi-line comments
+      // BONUS: Support multi-line comments
       // Is a single-line comment
       if (peekNext() == '/') {
         // Discard till end of line
