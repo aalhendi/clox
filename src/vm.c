@@ -4,9 +4,48 @@
 #include "compiler.h"
 #include "debug.h"
 #include "value.h"
+#include <stdarg.h>
+#include <stdbool.h>
 #include <stdio.h>
+#include <sys/_types/_va_list.h>
 
 VM vm;
+
+// Returns a value some distance from the top of the stack without popping it.
+static Value peek(int distance) { return vm.stackTop[-1 - distance]; }
+
+// Returns a bool of true if False or nil, else true.
+// Lox borrows from Ruby. Only False and nil are falsey. 0 is true.
+static bool isFalsey(Value value) {
+  return IS_NIL(value) || (IS_BOOL(value) && !AS_BOOL(value));
+}
+
+// Set stackTop ptr to point to beginning of stack to indicate its empty
+static void resetStack() {
+  // Since stack won't be used till values are stored inside
+  // there is no need to allocate it or clear it
+  vm.stackTop = vm.stack;
+}
+
+// Prints an runtime error to stderr
+static void runtimeError(const char *format, ...) {
+  // allows fn to be variadic, passing arbitrary number of arguments.
+  va_list args;
+  va_start(args, format);
+  // fprintf variant that accepts an explicit va_list.
+  vfprintf(stderr, format, args);
+  va_end(args);
+  fputs("\n", stderr);
+
+  // Get index of instruction in chunk - 1
+  // because ip advances past instruction before executing it
+  size_t instruction = vm.ip - vm.chunk->code - 1;
+  // Look into chunk's debug line array.
+  int line = vm.chunk->lines[instruction];
+  // BONUS: Stack trace... when there's a call stack to trace.
+  fprintf(stderr, "[line %d] in script\n", line);
+  resetStack();
+}
 
 // Handles decoding or dispatching the instruction.
 static InterpretResult run() {
@@ -14,15 +53,22 @@ static InterpretResult run() {
 #define READ_BYTE() (*vm.ip++)
 // Reads next byte from bytecode using it as index into chunk constants
 #define READ_CONSTANT() (vm.chunk->constants.values[READ_BYTE()])
-// Only difference in binary ops is the actual operator they use
-// This abstracts the boilerplate of popping the 2 operands
-// and pushing the result
+// Binary ops only differ in the actual operator they use.
+// This abstracts the boilerplate of shared for binary operations.
 // do-while used to expand multi-statement macro with semicolon at the end.
-#define BINARY_OP(op)                                                          \
+// Check that both operands are numbers else throws a runtime error.
+// If numbers, pops and unwraps Value types to doubles and executes operator
+// and re-wraps \using valueType\ passed in before pushing back to the stack.
+// NOTE: Pretty big macro... not neccecarily good C practice
+#define BINARY_OP(valueType, op)                                               \
   do {                                                                         \
-    double b = pop();                                                          \
-    double a = pop();                                                          \
-    push(a op b);                                                              \
+    if (!IS_NUMBER(peek(0)) || !IS_NUMBER(peek(1))) {                          \
+      runtimeError("Operands must be numbers.");                               \
+      return INTERPRET_RUNTIME_ERROR;                                          \
+    }                                                                          \
+    double b = AS_NUMBER(pop());                                               \
+    double a = AS_NUMBER(pop());                                               \
+    push(valueType(a op b));                                                   \
   } while (false)
 
   while (true) {
@@ -51,27 +97,49 @@ static InterpretResult run() {
       push(constant);
       break;
     }
+    case OP_NIL: {
+      push(NIL_VAL);
+      break;
+    }
+    case OP_TRUE: {
+      push(BOOL_VAL(true));
+      break;
+    }
+    case OP_FALSE: {
+      push(BOOL_VAL(false));
+      break;
+    }
     case OP_ADD: {
-      BINARY_OP(+);
+      BINARY_OP(NUMBER_VAL, +);
       break;
     }
     case OP_SUBTRACT: {
-      BINARY_OP(-);
+      BINARY_OP(NUMBER_VAL, -);
       break;
     }
     case OP_MULTIPLY: {
-      BINARY_OP(*);
+      BINARY_OP(NUMBER_VAL, *);
       break;
     }
     case OP_DIVIDE: {
-      BINARY_OP(/);
+      BINARY_OP(NUMBER_VAL, /);
+      break;
+    }
+    case OP_NOT: {
+      // isFalsey would return true for false -> inverting it
+      push(BOOL_VAL(isFalsey(pop())));
       break;
     }
     case OP_NEGATE: {
       // Pops the top value in the stack, negates it and replaces it back
       // BONUS: might be faster to simply negate the value in place without
       // messing with stackTop
-      push(-pop());
+      // Peek top of stack and check if its a number.
+      if (!IS_NUMBER(peek(0))) {
+        runtimeError("Operand must be a number.");
+        return INTERPRET_RUNTIME_ERROR;
+      }
+      push(NUMBER_VAL(-AS_NUMBER(pop())));
       break;
     }
     case OP_RETURN: {
@@ -85,13 +153,6 @@ static InterpretResult run() {
 #undef READ_BYTE
 #undef READ_CONSTANT
 #undef BINARY_OP
-}
-
-static void resetStack() {
-  // Since stack won't be used till values are stored inside
-  // there is no need to allocate it or clear it
-  // Set stackTop ptr to point to beginning of stack to indicate its empty
-  vm.stackTop = vm.stack;
 }
 
 // Initializes the VM
@@ -121,7 +182,7 @@ Value pop() {
 // Creates an empty chunk and passes it to the compiler.
 // If compile success, sets vm bytecode chunk to compile result.
 // Returns an InterpretResult
-InterpretResult interpret(const char* source) {
+InterpretResult interpret(const char *source) {
   Chunk chunk;
   initChunk(&chunk);
 
@@ -138,4 +199,3 @@ InterpretResult interpret(const char* source) {
   freeChunk(&chunk);
   return result;
 }
-
