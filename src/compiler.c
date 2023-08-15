@@ -298,6 +298,16 @@ static void number() {
   emitConstant(NUMBER_VAL(value));
 }
 
+// Takes the string's characters directly from the lexeme.
+// +1 and -2 trim the leading and trailing quotation marks.
+// Then creates a string object, wraps it in a Value and emits
+// it into the constants table.
+// BONUS: Support escape sequences and translate them here e.g., ('\n')
+static void string() {
+  emitConstant(OBJ_VAL(
+      copyString(parser.previous.start + 1, parser.previous.length - 2)));
+}
+
 // Assumes leading minus/bang token has been consumed and stored in previous.
 // Recursively calls back into expression to compile operand.
 // Emits bytecode to perform unary operation.
@@ -349,7 +359,7 @@ ParseRule rules[] = {
     [TOKEN_LESS] = {NULL, binary, PREC_COMPARISON},
     [TOKEN_LESS_EQUAL] = {NULL, binary, PREC_COMPARISON},
     [TOKEN_IDENTIFIER] = {NULL, NULL, PREC_NONE},
-    [TOKEN_STRING] = {NULL, NULL, PREC_NONE},
+    [TOKEN_STRING] = {string, NULL, PREC_NONE},
     [TOKEN_NUMBER] = {number, NULL, PREC_NONE},
     [TOKEN_AND] = {NULL, NULL, PREC_NONE},
     [TOKEN_CLASS] = {NULL, NULL, PREC_NONE},
