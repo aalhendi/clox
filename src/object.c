@@ -18,6 +18,11 @@ static Obj *allocateObject(size_t size, ObjType type) {
   Obj *object = (Obj *)reallocate(NULL, 0, size);
   object->type = type;
 
+  // Insert object as the head of singly-linked list.
+  // Avoids maintaining and updating ptr to tail.
+  object->next = vm.objects;
+  vm.objects = object;
+
   return object;
 }
 

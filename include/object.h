@@ -26,6 +26,9 @@ typedef enum {
 // Any lox value who's state lives on the heap
 struct Obj {
   ObjType type;
+  // Instrusive linked list. Each obj points at next obj in chain.
+  // Ptr to head is in VM
+  struct Obj *next;
 };
 
 struct ObjString {

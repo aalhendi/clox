@@ -201,9 +201,12 @@ static InterpretResult run() {
 }
 
 // Initializes the VM
-void initVM() { resetStack(); }
+void initVM() {
+  resetStack();
+  vm.objects = NULL;
+}
 
-void freeVM() {}
+void freeVM() { freeObjects(); }
 
 // Appends a value to the end of the stack and increments the stackTop pointer
 void push(Value value) {

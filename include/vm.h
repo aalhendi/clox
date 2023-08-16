@@ -18,6 +18,7 @@ typedef struct VM {
   // than to calculate the offset when needed. It points to where next value is
   // to be pushed.
   Value *stackTop;
+  Obj *objects; // ptr to head of insrusive objects linked list
 } VM;
 
 typedef enum InterpretResult {
@@ -26,9 +27,11 @@ typedef enum InterpretResult {
   INTERPRET_RUNTIME_ERROR
 } InterpretResult;
 
+extern VM vm; // Expose global VM
+
 void initVM();
 void freeVM();
-InterpretResult interpret(const char* source);
+InterpretResult interpret(const char *source);
 void push(Value value);
 Value pop();
 
