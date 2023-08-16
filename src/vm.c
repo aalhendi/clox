@@ -3,10 +3,13 @@
 #include "common.h"
 #include "compiler.h"
 #include "debug.h"
+#include "memory.h"
+#include "object.h"
 #include "value.h"
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <string.h>
 #include <sys/_types/_va_list.h>
 
 VM vm;
@@ -18,6 +21,25 @@ static Value peek(int distance) { return vm.stackTop[-1 - distance]; }
 // Lox borrows from Ruby. Only False and nil are falsey. 0 is true.
 static bool isFalsey(Value value) {
   return IS_NIL(value) || (IS_BOOL(value) && !AS_BOOL(value));
+}
+
+// Concatenates two string Object Values from the stack.
+// Pops them off, Allocates a new char array with combined length and copies
+// both halves into it. Finally pushes new string as Obj Value to the stack
+static void concatenate() {
+  ObjString *b = AS_STRING(pop());
+  ObjString *a = AS_STRING(pop());
+
+  int length = a->length + b->length;
+  char *chars = ALLOCATE(char, length + 1); // +1 for null terminator
+  // Copy a->chars into array (start of arr)
+  memcpy(chars, a->chars, a->length);
+  // Copy b->chars into array starting where a ends (start of arr + len(a))
+  memcpy(chars + a->length, b->chars, b->length);
+  chars[length] = '\0';
+
+  ObjString *result = takeString(chars, length);
+  push(OBJ_VAL(result));
 }
 
 // Set stackTop ptr to point to beginning of stack to indicate its empty
@@ -124,7 +146,16 @@ static InterpretResult run() {
       break;
     }
     case OP_ADD: {
-      BINARY_OP(NUMBER_VAL, +);
+      if (IS_STRING(peek(0)) && IS_STRING(peek(1))) {
+        concatenate();
+      } else if (IS_NUMBER(peek(0)) && IS_NUMBER(peek(1))) {
+        double b = AS_NUMBER(pop());
+        double a = AS_NUMBER(pop());
+        push(NUMBER_VAL(a + b));
+      } else {
+        runtimeError("Operands must be two numbers or two strings.");
+        return INTERPRET_RUNTIME_ERROR;
+      }
       break;
     }
     case OP_SUBTRACT: {

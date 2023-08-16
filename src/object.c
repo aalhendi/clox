@@ -31,6 +31,11 @@ static ObjString *allocateString(char *chars, int length) {
   return string;
 }
 
+// Allocates a string on the heap via taking ownership of the passed chars
+ObjString *takeString(char *chars, int length) {
+  return allocateString(chars, length);
+}
+
 // Creates and allocates a null-terminated string on the heap
 // via copying characters from an existing source.
 ObjString *copyString(const char *chars, int length) {
@@ -45,4 +50,14 @@ ObjString *copyString(const char *chars, int length) {
   // BUT some C std library functions expect null terminated strings.
   heapChars[length] = '\0';
   return allocateString(heapChars, length);
+}
+
+// Helper function to print Object Values
+void printObject(Value value) {
+  switch (OBJ_TYPE(value)) {
+  case OBJ_STRING: {
+    printf("%s", AS_CSTRING(value));
+    break;
+  }
+  }
 }

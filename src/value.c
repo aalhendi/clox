@@ -1,6 +1,9 @@
-#include "value.h"
-#include "memory.h"
 #include <stdio.h>
+#include <string.h>
+
+#include "memory.h"
+#include "object.h"
+#include "value.h"
 
 // Initializes a new dynamic value array
 void initValueArray(ValueArray *array) {
@@ -43,6 +46,10 @@ void printValue(Value value) {
     printf("%g", AS_NUMBER(value));
     break;
   }
+  case VAL_OBJ: {
+    printObject(value);
+    break;
+  }
   }
 }
 
@@ -63,6 +70,17 @@ bool valuesEqual(Value a, Value b) {
   }
   case VAL_NUMBER: {
     return AS_NUMBER(a) == AS_NUMBER(b);
+  }
+  case VAL_OBJ: {
+    // Even if both string literals are equal, they won't have the same memory
+    // address because each literal is allocated on the heap seperately and so
+    // we need to compare the contents and not just the mem addr.
+    // NOTE: Even if its the same object, we still memcmp the string. That means
+    //       equality checks for strings are slower.
+    ObjString *aString = AS_STRING(a);
+    ObjString *bString = AS_STRING(b);
+    return aString->length == bString->length &&
+           memcmp(aString->chars, bString->chars, aString->length) == 0;
   }
   default:
     return false; // Unreachable
